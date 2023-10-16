@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"ppamo/api/config"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,21 +52,32 @@ func Test_ConvertError(t *testing.T) {
 		res *ConvertionResponse
 		err error
 	)
-	req = &ConvertionRequest{
-		Profile: "",
-		Text:    "",
-	}
+	req = &ConvertionRequest{Profile: "", Text: ""}
 	res, err = converter.Convert(req)
 	assert.Nil(t, res)
 	assert.NotNil(t, err)
 	assert.Equal(t, "No profiles loaded", fmt.Sprintf("%s", err))
+
+	config.LoadConfigFromContent(configuration)
+	req = &ConvertionRequest{Profile: "none", Text: "none"}
+	res, err = converter.Convert(req)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.Equal(t, "No profile found", fmt.Sprintf("%s", err))
+
+	config.GetConfig().TempFolder = "?"
+	req = &ConvertionRequest{Profile: "en-male", Text: "none"}
+	res, err = converter.Convert(req)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(fmt.Sprintf("%s", err), "no such file or directory"))
 }
 
 func assertRequest(t *testing.T, req *ConvertionRequest) {
 	var (
-		res      *ConvertionResponse
-		filePath string
-		err      error
+		res *ConvertionResponse
+		// filePath string
+		err error
 	)
 	res, err = converter.Convert(req)
 	assert.Nil(t, err)
@@ -73,7 +85,7 @@ func assertRequest(t *testing.T, req *ConvertionRequest) {
 		return
 	}
 	assert.True(t, len(*res.Body) > 0)
-	filePath = fmt.Sprintf("/data/tmp/%s.ogg", req.Profile)
+	// filePath = fmt.Sprintf("/data/tmp/%s.ogg", req.Profile)
 	// err = os.WriteFile(filePath, *res.Body, 0666)
 	// assert.Nil(t, err)
 }

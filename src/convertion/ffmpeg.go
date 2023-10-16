@@ -30,15 +30,10 @@ func NewFfmpegConverter() (IConverter, error) {
 
 func (c *ConvertionHandler) Start() error {
 	log.Printf("ff> Starting converter")
-
 	return nil
 }
 
 func (c *ConvertionHandler) convertWavToOgg(files []string) ([]byte, error) {
-	/*
-	   ffmpeg -y -i effects/tirit.wav -i $OUTPUTWAV -i effects/tirit2.wav \
-	   	-filter_complex "[0:a][1:a][2:a]concat=n=3:v=0:a=1" -c:a libvorbis -b:a 92k $OUTPUTOGG
-	*/
 	var (
 		i        int
 		cmd      *exec.Cmd
@@ -54,7 +49,7 @@ func (c *ConvertionHandler) convertWavToOgg(files []string) ([]byte, error) {
 		params = append(params, "-i", path)
 		fcomplex = fmt.Sprintf("%s[%d:a]", fcomplex, i)
 	}
-	path = utils.GetTimestampedFileName("/tmp", "output.ogg")
+	path = utils.GetTimestampedFileName(config.GetConfig().TempFolder, "output.ogg")
 	fcomplex = fmt.Sprintf("%sconcat=n=%d:v=0:a=1", fcomplex, len(files))
 	params = append(params, "-filter_complex", fcomplex, "-c:a", "libvorbis", path)
 	log.Printf("ff> Executing ffmpeg %s", strings.Join(params, " "))
