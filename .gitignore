@@ -1,0 +1,5 @@
+.*.swp
+coverage
+tmp
+.DS_Store
+config.json
