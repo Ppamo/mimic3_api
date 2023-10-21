@@ -30,9 +30,12 @@ func StringToSourceType(name string) SourceType {
 }
 
 type AudioSourceStruct struct {
-	Source  string `json:"source"`
-	Profile string `json:"profile,omitempty"`
-	Content string `json:"content"`
+	Type        string                `json:"type"`
+	ProfileName string                `json:"profile,omitempty"`
+	EffectName  string                `json:"effect,omitempty"`
+	Text        string                `json:"text"`
+	Profile     *ProfileOptionsStruct `json:"profile_details,omitempty"`
+	EffectPath  string                `json:"filepath,omitempty"`
 }
 
 type ConvertRequest struct {
@@ -42,7 +45,7 @@ type ConvertRequest struct {
 type ConvertResponse struct {
 	Status      int    `json:"status"`
 	Description string `json:"description,omitempty"`
-	Body        []byte `json:"body"`
+	Body        []byte `json:"body,omiempty"`
 }
 
 type AudioEffectStruct struct {

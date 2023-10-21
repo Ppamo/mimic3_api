@@ -95,29 +95,11 @@ func (c *ConvertionHandler) createTTSWav(p *common.ProfileOptionsStruct, text st
 }
 
 func (c *ConvertionHandler) Convert(req *common.ConvertRequest) (*common.ConvertResponse, error) {
-	/*
-		type AudioSourceStruct struct {
-			Source  SourceType `json:"source"`
-			Profile string     `json:"profile,omitempty"`
-			Content string     `json:"value"`
-		}
-		type ConvertRequest struct {
-			Sources []AudioSourceStruct `json:"sources"`
-		}
-
-		type ConvertResponse struct {
-			Status      int    `json:"status"`
-			Description string `json:"description,omitempty"`
-			Body        []byte `json:"body"`
-		}
-	*/
 	var (
 		source  common.AudioSourceStruct
 		wavFile string
 		files   []string
 		output  []byte
-		p       *common.ProfileOptionsStruct
-		e       *common.AudioEffectStruct
 		res     common.ConvertResponse
 		err     error
 	)
@@ -127,26 +109,17 @@ func (c *ConvertionHandler) Convert(req *common.ConvertRequest) (*common.Convert
 	}
 	log.Printf("ff> Sources:\n%+v\n", req.Sources)
 	for _, source = range req.Sources {
-		switch common.StringToSourceType(source.Source) {
+		switch common.StringToSourceType(source.Type) {
 		case common.SourceText:
-			if p, err = config.GetConfig().GetProfileByName(source.Profile); err != nil {
-				log.Printf("ERROR: Failed to get profile '%s'\n%s", source.Profile, err)
-				return nil, err
-			}
-			log.Printf("ff> Converting\n%v", source.Content)
-			if wavFile, err = c.createTTSWav(p, source.Content); err != nil {
+			log.Printf("ff> Converting\n%v", source.Text)
+			if wavFile, err = c.createTTSWav(source.Profile, source.Text); err != nil {
 				log.Printf("ERROR: Failed to create TTS\n%s", err)
 				return nil, err
 			}
 			defer os.Remove(wavFile)
 			files = append(files, wavFile)
 		case common.SourceEffect:
-			e, err = config.GetConfig().GetEffectByName(source.Content)
-			if err != nil {
-				log.Printf("ERROR: Failed to load '%s' effect", source.Content, err)
-				return nil, err
-			}
-			files = append(files, e.Path)
+			files = append(files, source.EffectPath)
 		}
 	}
 	if output, err = c.convertWavToOgg(files); err != nil {

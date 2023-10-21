@@ -3,15 +3,15 @@
 		{
 			"name": "emily_description",
 			"sources": [
-				{"source": "text", "profile": "es-female", "content": "Soy Emily, una asistente de IA amigable y servicial que se parece a Tima de Metropolis. Administro tareas, genero imágenes y realizo copias de seguridad de los datos."}
+				{"type": "text", "profile": "es-female", "text": "Soy Emily, una asistente de IA amigable y servicial que se parece a Tima de Metrópolis. Administro tareas, genero imágenes y realizo copias de seguridad de los datos."}
 			]
 		},
 		{
 			"name": "emily_description_dot",
 			"sources": [
-				{"source": "effect", "profile": "es-female", "content": "dot"},
-				{"source": "text", "profile": "es-female", "content": "Sí, puedo ayudarte a escribir partituras, pero necesitaría que me proporciones detalles sobre la música para la que deseas la partitura. Por favor, proporciona detalles como el ritmo, la melodía, los acordes, etc. Por favor, ten en cuenta que mi capacidad para escribir partituras no es la de un compositor humano, pero haré mi mejor esfuerzo."},
-				{"source": "effect", "profile": "es-female", "content": "dot"}
+				{"type": "effect", "effect": "tirit-2"},
+				{"type": "text", "profile": "es-female", "text": "Sí, puedo ayudarte a escribir partituras, pero necesitaría que me proporciones detalles sobre la música para la que deseas la partitura. Por favor, proporciona detalles como el ritmo, la melodía, los acordes, etc. Por favor, ten en cuenta que mi capacidad para escribir partituras no es la de un compositor humano, pero haré mi mejor esfuerzo."},
+				{"type": "effect", "effect": "tirit"}
 			]
 		}
 	]

@@ -65,13 +65,13 @@ func main() {
 				Description: fmt.Sprintf("Bad Request:\n%s", err),
 			})
 		}
-		log.Printf("--> %+v", req)
+		log.Printf("++> Converting request:\n%v", req)
 		res, err := hand.Convert(&req)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, Default501Error)
+			return c.JSON(http.StatusInternalServerError, res)
 		}
 		return c.JSON(http.StatusOK, res)
 	})
-	log.Printf("++Starting server at port %d", PORT)
+	log.Printf("++> Starting server at port %d", PORT)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", PORT)))
 }

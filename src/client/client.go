@@ -74,7 +74,13 @@ func main() {
 			fmt.Printf("ERROR: Failed request:\n%s\n", err)
 			return
 		}
-		fmt.Printf("> Response: %s\n", res.Status)
+		fmt.Printf("> Response: %+v\n", res)
+		if res.StatusCode != 200 {
+			r = common.ConvertResponse{}
+			json.NewDecoder(res.Body).Decode(&r)
+			fmt.Printf("ERROR: Response status not ok:\n%+v\n", r)
+			return
+		}
 		filePath = utils.GetTimestampedFileName("./",
 			fmt.Sprintf("%s.audio.ogg", strings.ReplaceAll(source.Name, " ", "_")))
 		fmt.Printf("> Writing new file %s\n", filePath)
