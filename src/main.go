@@ -24,8 +24,12 @@ var (
 )
 
 func main() {
-	e := echo.New()
+	config_path := os.Getenv("CONFIG_PATH")
+	if _, err := os.Stat(config_path); err != nil {
+		log.Fatalf("++> Error loading config:\n%v", err)
+	}
 	config.LoadConfig(os.Getenv("CONFIG_PATH"))
+	e := echo.New()
 	conv, err := convertion.NewConverter()
 	if err != nil {
 		log.Fatalf("++> Error creating new converter:\n%v", err)

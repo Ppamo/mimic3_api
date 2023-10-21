@@ -15,6 +15,7 @@ import (
 const (
 	mimic3Bin = "/home/mimic3/app/.venv/bin/mimic3"
 	ffmpegBin = "/usr/bin/ffmpeg"
+	voicesDir = "/opt/mimic3-server/voices"
 )
 
 type ConvertionHandler struct{}
@@ -76,7 +77,7 @@ func (c *ConvertionHandler) createTTSWav(p *common.ProfileOptionsStruct, text st
 		err    error
 	)
 	params = p.ToParamsArray()
-	params = append(params, text)
+	params = append(params, "--voices-dir", voicesDir, text)
 	cmd = exec.Command(mimic3Bin, params...)
 	f, err = os.CreateTemp(config.GetConfig().TempFolder, "out.*.wav")
 	if err != nil {
@@ -86,11 +87,13 @@ func (c *ConvertionHandler) createTTSWav(p *common.ProfileOptionsStruct, text st
 	defer f.Close()
 	cmd.Stdout = f
 	cmd.Stderr = &stderr
+	log.Printf("cf> Executing:\n%s %s", mimic3Bin, strings.Join(params, " "))
 	log.Printf("cf> Writting output temp file %s", f.Name())
 	if err = cmd.Run(); err != nil {
 		log.Printf("ERROR: Failed to start mimic3:\n%s\n%v", stderr.String(), err)
 		return "", err
 	}
+	log.Printf("cf> mimic3 Output:\n%s", stderr.String())
 	return f.Name(), nil
 }
 
