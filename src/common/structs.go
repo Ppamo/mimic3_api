@@ -1,6 +1,49 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+type SourceType int32
+
+const (
+	SourceUnknown SourceType = iota
+	SourceText
+	SourceEffect
+)
+
+func (st SourceType) String() string {
+	return [...]string{"Unknown", "Text", "Effect"}[st]
+}
+
+func StringToSourceType(name string) SourceType {
+	values := map[string]SourceType{
+		"unknown": SourceUnknown,
+		"text":    SourceText,
+		"effect":  SourceEffect,
+	}
+	if element, ok := values[strings.ToLower(name)]; ok {
+		return element
+	}
+	return SourceUnknown
+}
+
+type AudioSourceStruct struct {
+	Source  string `json:"source"`
+	Profile string `json:"profile,omitempty"`
+	Content string `json:"content"`
+}
+
+type ConvertRequest struct {
+	Sources []AudioSourceStruct `json:"sources"`
+}
+
+type ConvertResponse struct {
+	Status      int    `json:"status"`
+	Description string `json:"description,omitempty"`
+	Body        []byte `json:"body"`
+}
 
 type AudioEffectStruct struct {
 	Name string `json:"name"`
@@ -21,4 +64,21 @@ func (p *ProfileOptionsStruct) ToParamsArray() []string {
 		"--length-scale", fmt.Sprintf("%.2f", p.LengthScale),
 		"--noise-scale", fmt.Sprintf("%.2f", p.NoiseScale),
 		"--noise-w", fmt.Sprintf("%.2f", p.NoiseW)}
+}
+
+type ProfilesResponse struct {
+	Status      int                    `json:"status"`
+	Description string                 `json:"description,omitempty"`
+	Profiles    []ProfileOptionsStruct `json:"profiles"`
+}
+
+type EffectsResponse struct {
+	Status      int                 `json:"status"`
+	Description string              `json:"description,omitempty"`
+	Effects     []AudioEffectStruct `json:"effects"`
+}
+
+type DefaultError struct {
+	Status      int    `json:"status"`
+	Description string `json:"description"`
 }

@@ -1,6 +1,9 @@
 package convertion
 
-import "fmt"
+import (
+	"fmt"
+	"ppamo/api/common"
+)
 
 type SpeakerProfile int32
 
@@ -16,8 +19,7 @@ func (p SpeakerProfile) String() string {
 }
 
 type ConvertionRequest struct {
-	Profile string `json:"profile"`
-	Text    string `json:"text"`
+	Sources []common.AudioSourceStruct `json:"sources"`
 }
 
 type ConvertionResponse struct {
@@ -25,7 +27,7 @@ type ConvertionResponse struct {
 }
 
 func (req *ConvertionRequest) String() string {
-	return fmt.Sprintf("%s: %s", req.Profile, req.Text)
+	return fmt.Sprintf("%+v", req)
 }
 
 func (res *ConvertionResponse) String() string {

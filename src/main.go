@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
+	"ppamo/api/common"
+	"ppamo/api/config"
 	"ppamo/api/convertion"
+	"ppamo/api/handlers"
 
 	"github.com/labstack/echo/v4"
 )
@@ -15,41 +19,59 @@ const (
 	PORT = 8080
 )
 
-type ResponseStuct struct {
-	Status      int    `json:"status"`
-	Body        []byte `json:"body,omitempty"`
-	Description string `json:"description"`
-}
-
-type RequestStruct struct {
-	Text    string `json:"text"`
-	Profile string `json:"profile"`
-}
+var (
+	Default501Error = common.DefaultError{Status: 501, Description: "Internal Server Error"}
+)
 
 func main() {
 	e := echo.New()
-	con, err := convertion.NewConverter()
+	config.LoadConfig(os.Getenv("CONFIG_PATH"))
+	conv, err := convertion.NewConverter()
 	if err != nil {
-		log.Fatalf("--> Error creating converter:\n%v", err)
+		log.Fatalf("++> Error creating new converter:\n%v", err)
+	}
+	hand, err := handlers.NewHandler(&conv)
+	if err != nil {
+		log.Fatalf("++> Error creating new handler:\n%v", err)
 	}
 
 	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, ResponseStuct{Status: 200, Description: "OK"})
+		return c.JSON(http.StatusInternalServerError, common.DefaultError{
+			Status:      500,
+			Description: "Method Not Yet Implemented"},
+		)
+	})
+	e.GET("/profiles", func(c echo.Context) error {
+		res, err := hand.GetProfiles()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, Default501Error)
+		}
+		return c.JSON(http.StatusOK, res)
+	})
+	e.GET("/effects", func(c echo.Context) error {
+		res, err := hand.GetEffects()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, Default501Error)
+		}
+		return c.JSON(http.StatusOK, res)
 	})
 	e.POST("/convert", func(c echo.Context) error {
-		req := RequestStruct{}
-		if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
-			return c.JSON(http.StatusNotImplemented, ResponseStuct{Status: 400, Description: "NOK"})
-		}
-		_, err := con.Convert(&convertion.ConvertionRequest{
-			Text:    req.Text,
-			Profile: req.Profile,
-		})
+		req := common.ConvertRequest{}
+		err := json.NewDecoder(c.Request().Body).Decode(&req)
 		if err != nil {
-			return c.JSON(http.StatusNotImplemented, ResponseStuct{Status: 400, Description: "NOK"})
+			log.Printf("++> ERROR: Failed to unmarshal", err)
+			return c.JSON(http.StatusBadRequest, common.DefaultError{
+				Status:      400,
+				Description: fmt.Sprintf("Bad Request:\n%s", err),
+			})
 		}
-		return c.JSON(http.StatusNotImplemented, ResponseStuct{Status: 200, Description: "OK"})
+		log.Printf("--> %+v", req)
+		res, err := hand.Convert(&req)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, Default501Error)
+		}
+		return c.JSON(http.StatusOK, res)
 	})
-	log.Printf("Starting server at port %d", PORT)
+	log.Printf("++Starting server at port %d", PORT)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", PORT)))
 }

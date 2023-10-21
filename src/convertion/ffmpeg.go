@@ -94,30 +94,66 @@ func (c *ConvertionHandler) createTTSWav(p *common.ProfileOptionsStruct, text st
 	return f.Name(), nil
 }
 
-func (c *ConvertionHandler) Convert(req *ConvertionRequest) (*ConvertionResponse, error) {
+func (c *ConvertionHandler) Convert(req *common.ConvertRequest) (*common.ConvertResponse, error) {
+	/*
+		type AudioSourceStruct struct {
+			Source  SourceType `json:"source"`
+			Profile string     `json:"profile,omitempty"`
+			Content string     `json:"value"`
+		}
+		type ConvertRequest struct {
+			Sources []AudioSourceStruct `json:"sources"`
+		}
+
+		type ConvertResponse struct {
+			Status      int    `json:"status"`
+			Description string `json:"description,omitempty"`
+			Body        []byte `json:"body"`
+		}
+	*/
 	var (
+		source  common.AudioSourceStruct
 		wavFile string
+		files   []string
 		output  []byte
 		p       *common.ProfileOptionsStruct
-		res     ConvertionResponse
+		e       *common.AudioEffectStruct
+		res     common.ConvertResponse
 		err     error
 	)
-	p, err = config.GetConfig().GetProfileByName(req.Profile)
-	if err != nil {
-		log.Printf("ERROR: Failed to get profile '%s'\n%s", req.Profile, err)
-		return nil, err
+	if len(req.Sources) == 0 {
+		log.Printf("cf> No sources found!")
+		return nil, nil
 	}
-	log.Printf("ff> Converting\n%v", req)
-	if wavFile, err = c.createTTSWav(p, req.Text); err != nil {
-		log.Printf("ERROR: Failed to create TTS\n%s", err)
-		return nil, err
+	log.Printf("ff> Sources:\n%+v\n", req.Sources)
+	for _, source = range req.Sources {
+		switch common.StringToSourceType(source.Source) {
+		case common.SourceText:
+			if p, err = config.GetConfig().GetProfileByName(source.Profile); err != nil {
+				log.Printf("ERROR: Failed to get profile '%s'\n%s", source.Profile, err)
+				return nil, err
+			}
+			log.Printf("ff> Converting\n%v", source.Content)
+			if wavFile, err = c.createTTSWav(p, source.Content); err != nil {
+				log.Printf("ERROR: Failed to create TTS\n%s", err)
+				return nil, err
+			}
+			defer os.Remove(wavFile)
+			files = append(files, wavFile)
+		case common.SourceEffect:
+			e, err = config.GetConfig().GetEffectByName(source.Content)
+			if err != nil {
+				log.Printf("ERROR: Failed to load '%s' effect", source.Content, err)
+				return nil, err
+			}
+			files = append(files, e.Path)
+		}
 	}
-	defer os.Remove(wavFile)
-	if output, err = c.convertWavToOgg([]string{wavFile}); err != nil {
+	if output, err = c.convertWavToOgg(files); err != nil {
 		log.Printf("ERROR: Failed to create Ogg\n%s", err)
 		return nil, err
 	}
-	res = ConvertionResponse{Body: &output}
+	res = common.ConvertResponse{Body: output}
 	return &res, nil
 }
 

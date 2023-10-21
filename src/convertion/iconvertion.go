@@ -1,8 +1,10 @@
 package convertion
 
+import "ppamo/api/common"
+
 type IConverter interface {
 	Start() error
-	Convert(*ConvertionRequest) (*ConvertionResponse, error)
+	Convert(*common.ConvertRequest) (*common.ConvertResponse, error)
 	Terminate() error
 }
 
