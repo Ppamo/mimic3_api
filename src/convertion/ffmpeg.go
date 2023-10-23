@@ -9,7 +9,9 @@ import (
 	"ppamo/api/common"
 	"ppamo/api/config"
 	"ppamo/api/utils"
+	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -34,7 +36,37 @@ func (c *ConvertionHandler) Start() error {
 	return nil
 }
 
-func (c *ConvertionHandler) convertWavToOgg(files []string) ([]byte, error) {
+func (c *ConvertionHandler) getDuration(logs string) (float64, error) {
+	var (
+		re1      *regexp.Regexp
+		re2      *regexp.Regexp
+		text     string
+		duration time.Duration
+		total    time.Duration = 0
+		err      error
+	)
+	log.Printf(">> Logs:\n%s", logs)
+	re1 = regexp.MustCompile(`Duration: [0-9:\.]+,`)
+	re2 = regexp.MustCompile(`[0-9][^,]*`)
+	for _, line := range re1.FindAllStringSubmatch(logs, -1) {
+		log.Printf("1>>.")
+		text = re2.FindString(line[0])
+		text = strings.Replace(text, ":", "h", 1)
+		text = strings.Replace(text, ":", "m", 1)
+		text = strings.Replace(text, ".", "s", 1)
+		text = fmt.Sprintf("%s0ms", text)
+		duration, err = time.ParseDuration(text)
+		if err != nil {
+			return 0.0, err
+		}
+		log.Printf("1>> Duration: %s", duration)
+		total = total + duration
+	}
+	log.Printf("2>> Duration: %s", total)
+	return total.Seconds(), nil
+}
+
+func (c *ConvertionHandler) convertWavToOgg(files []string) (common.ConvertResponse, error) {
 	var (
 		i        int
 		cmd      *exec.Cmd
@@ -42,6 +74,7 @@ func (c *ConvertionHandler) convertWavToOgg(files []string) ([]byte, error) {
 		params   []string
 		fcomplex string
 		output   []byte
+		duration float64
 		err      error
 	)
 
@@ -52,20 +85,25 @@ func (c *ConvertionHandler) convertWavToOgg(files []string) ([]byte, error) {
 	}
 	path = utils.GetTimestampedFileName(config.GetConfig().TempFolder, "output.ogg")
 	fcomplex = fmt.Sprintf("%sconcat=n=%d:v=0:a=1", fcomplex, len(files))
-	params = append(params, "-filter_complex", fcomplex, "-c:a", "libvorbis", path)
+	params = append(params, "-filter_complex", fcomplex, "-c:a", "libopus", "-b:a", "48000", path)
 	log.Printf("ff> Executing ffmpeg %s", strings.Join(params, " "))
 	cmd = exec.Command(ffmpegBin, params...)
 	if output, err = cmd.CombinedOutput(); err != nil {
 		log.Printf("ERROR: Failed to start ffmpeg:\n%s\n%v", output, err)
-		return nil, err
+		return common.ConvertResponse{}, err
 	}
 	log.Printf("cf> ffmpeg output: %s", output)
+	duration, err = c.getDuration(string(output))
 	defer os.Remove(path)
 	if output, err = os.ReadFile(path); err != nil {
 		log.Printf("ERROR: Failed to start ffmpeg:\n%s\n%v", output, err)
-		return nil, err
+		return common.ConvertResponse{}, err
 	}
-	return output, nil
+	if err != nil {
+		log.Printf("ERROR: Failed to calculate duration:\n%v", err)
+		return common.ConvertResponse{}, err
+	}
+	return common.ConvertResponse{Body: output, Duration: duration}, nil
 }
 
 func (c *ConvertionHandler) createTTSWav(p *common.ProfileOptionsStruct, text string) (string, error) {
@@ -102,7 +140,6 @@ func (c *ConvertionHandler) Convert(req *common.ConvertRequest) (*common.Convert
 		source  common.AudioSourceStruct
 		wavFile string
 		files   []string
-		output  []byte
 		res     common.ConvertResponse
 		err     error
 	)
@@ -125,11 +162,10 @@ func (c *ConvertionHandler) Convert(req *common.ConvertRequest) (*common.Convert
 			files = append(files, source.EffectPath)
 		}
 	}
-	if output, err = c.convertWavToOgg(files); err != nil {
+	if res, err = c.convertWavToOgg(files); err != nil {
 		log.Printf("ERROR: Failed to create Ogg\n%s", err)
 		return nil, err
 	}
-	res = common.ConvertResponse{Body: output}
 	return &res, nil
 }
 

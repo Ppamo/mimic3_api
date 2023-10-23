@@ -73,5 +73,6 @@ func (h *HandlerStruct) Convert(req *common.ConvertRequest) (*common.ConvertResp
 		return &common.ConvertResponse{Status: 401, Description: "Bad Request: Failed to create audio"},
 			fmt.Errorf("Failed to create audio: %s", err)
 	}
+	res.Status = 200
 	return res, nil
 }

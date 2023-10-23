@@ -74,6 +74,7 @@ func main() {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, res)
 		}
+		log.Printf("++> Response:\nStatus: %d; Body Length: %d, Duration: %0.2f", res.Status, len(res.Body), res.Duration)
 		return c.JSON(http.StatusOK, res)
 	})
 	log.Printf("++> Starting server at port %d", PORT)

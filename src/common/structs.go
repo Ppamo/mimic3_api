@@ -43,9 +43,10 @@ type ConvertRequest struct {
 }
 
 type ConvertResponse struct {
-	Status      int    `json:"status"`
-	Description string `json:"description,omitempty"`
-	Body        []byte `json:"body,omiempty"`
+	Status      int     `json:"status"`
+	Description string  `json:"description,omitempty"`
+	Body        []byte  `json:"body,omiempty"`
+	Duration    float64 `json:"duration"`
 }
 
 type AudioEffectStruct struct {
