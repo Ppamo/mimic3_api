@@ -28,7 +28,10 @@ func main() {
 	if _, err := os.Stat(config_path); err != nil {
 		log.Fatalf("++> Error loading config:\n%v", err)
 	}
-	config.LoadConfig(os.Getenv("CONFIG_PATH"))
+	err := config.LoadConfig(os.Getenv("CONFIG_PATH"))
+	if err != nil {
+		log.Fatalf("++> Failed to load config:\n%s", err)
+	}
 	e := echo.New()
 	conv, err := convertion.NewConverter()
 	if err != nil {
@@ -63,7 +66,8 @@ func main() {
 		req := common.ConvertRequest{}
 		err := json.NewDecoder(c.Request().Body).Decode(&req)
 		if err != nil {
-			log.Printf("++> ERROR: Failed to unmarshal", err)
+			log.Printf("++> ERROR: Failed to unmarshal:\n%s\n%s", err, c.Request().Body)
+
 			return c.JSON(http.StatusBadRequest, common.DefaultError{
 				Status:      400,
 				Description: fmt.Sprintf("Bad Request:\n%s", err),

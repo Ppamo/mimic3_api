@@ -38,6 +38,12 @@ type AudioSourceStruct struct {
 	EffectPath  string                `json:"filepath,omitempty"`
 }
 
+type ConvertFormat struct {
+	Library   string   `json:"library"`
+	Extension string   `json:"extension"`
+	Options   []string `json:"options"`
+}
+
 type ConvertRequest struct {
 	Sources []AudioSourceStruct `json:"sources"`
 }

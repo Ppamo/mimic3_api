@@ -11,8 +11,24 @@ import (
 
 var config *ConfigStruct
 
+type OutputFormat int32
+
+const (
+	OutputFormatUnknown OutputFormat = iota
+	OutpuFormatDisabled
+	OutputFormatLibOpus
+	OutputFormatLibMp3Lame
+)
+
+type OutputOptions struct {
+	Library   string   `json:"library"`
+	Extension string   `json:"extension"`
+	Options   []string `json:"options"`
+}
+
 type ConfigStruct struct {
 	TempFolder string                        `json:"temp_folder"`
+	Output     *OutputOptions                `json:"output"`
 	Profiles   []common.ProfileOptionsStruct `json:"profiles"`
 	Effects    []common.AudioEffectStruct    `json:"effects"`
 }
@@ -52,7 +68,13 @@ func LoadConfig(path string) error {
 		log.Printf("cf> Error: failed to unmarshal content: %s", content)
 		return err
 	}
-	log.Printf("cf> Loaded %d profiles and %d effects", len(config.Profiles), len(config.Effects))
+	if len(config.Profiles) == 0 {
+		return fmt.Errorf("No profiles found")
+	}
+	if config.Output == nil {
+		return fmt.Errorf("No output format defined")
+	}
+	log.Printf("cf> Loaded:\n%s", config)
 	return nil
 }
 
@@ -82,4 +104,9 @@ func (c *ConfigStruct) GetEffectByName(name string) (*common.AudioEffectStruct, 
 		}
 	}
 	return nil, fmt.Errorf("No effect found")
+}
+
+func (c *ConfigStruct) String() string {
+	return fmt.Sprintf("temp_folder: %s; profiles: %d; effects: %d; output: %s - %s %v", c.TempFolder,
+		len(c.Profiles), len(c.Effects), c.Output.Extension, c.Output.Library, c.Output.Options)
 }

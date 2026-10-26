@@ -20,14 +20,23 @@ const (
 	voicesDir = "/opt/mimic3-server/voices"
 )
 
-type ConvertionHandler struct{}
+type ConvertionHandler struct {
+	outputExtension   string
+	library           string
+	convertionOptions []string
+}
 
 func NewFfmpegConverter() (IConverter, error) {
-	c := ConvertionHandler{}
+	c := ConvertionHandler{
+		outputExtension:   config.GetConfig().Output.Extension,
+		library:           config.GetConfig().Output.Library,
+		convertionOptions: config.GetConfig().Output.Options,
+	}
 	if err := c.Start(); err != nil {
 		log.Printf("> ERROR:\n%v", err)
 		return nil, err
 	}
+	log.Printf("ff> Options:\n%s - %s %+v", c.outputExtension, c.library, c.convertionOptions)
 	return &c, nil
 }
 
@@ -45,11 +54,9 @@ func (c *ConvertionHandler) getDuration(logs string) (float64, error) {
 		total    time.Duration = 0
 		err      error
 	)
-	log.Printf(">> Logs:\n%s", logs)
 	re1 = regexp.MustCompile(`Duration: [0-9:\.]+,`)
 	re2 = regexp.MustCompile(`[0-9][^,]*`)
 	for _, line := range re1.FindAllStringSubmatch(logs, -1) {
-		log.Printf("1>>.")
 		text = re2.FindString(line[0])
 		text = strings.Replace(text, ":", "h", 1)
 		text = strings.Replace(text, ":", "m", 1)
@@ -59,11 +66,14 @@ func (c *ConvertionHandler) getDuration(logs string) (float64, error) {
 		if err != nil {
 			return 0.0, err
 		}
-		log.Printf("1>> Duration: %s", duration)
 		total = total + duration
 	}
-	log.Printf("2>> Duration: %s", total)
+	log.Printf("ff> Audio Duration: %s", total)
 	return total.Seconds(), nil
+}
+
+func (c *ConvertionHandler) getOutputFiileName() string {
+	return fmt.Sprintf("output.%s", c.outputExtension)
 }
 
 func (c *ConvertionHandler) convertWavToOgg(files []string) (common.ConvertResponse, error) {
@@ -83,9 +93,11 @@ func (c *ConvertionHandler) convertWavToOgg(files []string) (common.ConvertRespo
 		params = append(params, "-i", path)
 		fcomplex = fmt.Sprintf("%s[%d:a]", fcomplex, i)
 	}
-	path = utils.GetTimestampedFileName(config.GetConfig().TempFolder, "output.ogg")
+	path = utils.GetTimestampedFileName(config.GetConfig().TempFolder, c.getOutputFiileName())
 	fcomplex = fmt.Sprintf("%sconcat=n=%d:v=0:a=1", fcomplex, len(files))
-	params = append(params, "-filter_complex", fcomplex, "-c:a", "libopus", "-b:a", "48000", path)
+	params = append(params, "-filter_complex", fcomplex, "-c:a", c.library)
+	params = append(params, c.convertionOptions...)
+	params = append(params, path)
 	log.Printf("ff> Executing ffmpeg %s", strings.Join(params, " "))
 	cmd = exec.Command(ffmpegBin, params...)
 	if output, err = cmd.CombinedOutput(); err != nil {
